@@ -2,7 +2,7 @@
 /**
  * PDOCI
  *
- * PHP version 5.3
+ * PHP version 8.1
  *
  * @category Iterator
  * @package  PDOOCI
@@ -15,7 +15,7 @@ namespace PDOOCI;
 /**
  * Statement class of PDOOCI
  *
- * PHP version 5.3
+ * PHP version 8.1
  *
  * @category Statement
  * @package  PDOOCI
@@ -23,7 +23,6 @@ namespace PDOOCI;
  * @license  http://www.gnu.org/licenses/gpl-2.0.html GPLv2
  * @link     http://github.com/taq/pdooci
  */
-
 class StatementIterator implements \Iterator
 {
     /**
@@ -31,7 +30,7 @@ class StatementIterator implements \Iterator
      *
      * @var array
      */
-    private $_data;
+    private array $_data;
 
     /**
      * Constructor
@@ -44,63 +43,57 @@ class StatementIterator implements \Iterator
     }
 
     /**
-     * (PHP 5 &gt;= 5.0.0)<br/>
      * Return the current element
-     *
-     * @link http://php.net/manual/en/iterator.current.php
+     * @link https://php.net/manual/en/iterator.current.php
      * @return mixed Can return any type.
      */
-    public function current ()
+    #[TentativeType]
+    public function current(): mixed
     {
         return current($this->_data);
     }
 
     /**
-     * (PHP 5 &gt;= 5.0.0)<br/>
      * Move forward to next element
-     *
-     * @link http://php.net/manual/en/iterator.next.php
+     * @link https://php.net/manual/en/iterator.next.php
      * @return void Any returned value is ignored.
      */
-    public function next ()
+    #[TentativeType]
+    public function next(): void
     {
         next($this->_data);
     }
 
     /**
-     * (PHP 5 &gt;= 5.0.0)<br/>
      * Return the key of the current element
-     *
-     * @link http://php.net/manual/en/iterator.key.php
-     * @return mixed scalar on success, or null on failure.
+     * @link https://php.net/manual/en/iterator.key.php
+     * @return string|float|int|bool|null scalar on success, or null on failure.
      */
-    public function key ()
+    #[TentativeType]
+    public function key(): mixed
     {
         return key($this->_data);
     }
 
     /**
-     * (PHP 5 &gt;= 5.0.0)<br/>
      * Checks if current position is valid
+     * @link https://php.net/manual/en/iterator.valid.php
+     * @return bool The return value will be casted to boolean and then evaluated.
      * Returns true on success or false on failure.
-     *
-     * @link http://php.net/manual/en/iterator.valid.php
-     * @return boolean The return value will be casted to boolean and then evaluated.
      */
-    public function valid ()
+    #[TentativeType]
+    public function valid(): bool
     {
-        $k = key($this->_data);
-        return isset($this->_data[$k]);
+        return isset($this->_data[key($this->_data)]);
     }
 
     /**
-     * (PHP 5 &gt;= 5.0.0)<br/>
      * Rewind the Iterator to the first element
-     *
-     * @link http://php.net/manual/en/iterator.rewind.php
+     * @link https://php.net/manual/en/iterator.rewind.php
      * @return void Any returned value is ignored.
      */
-    public function rewind ()
+    #[TentativeType]
+    public function rewind(): void
     {
         reset($this->_data);
     }

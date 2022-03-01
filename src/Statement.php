@@ -12,10 +12,12 @@
  */
 namespace PDOOCI;
 
+use ReturnTypeWillChange;
+
 /**
  * Statement class of PDOOCI
  *
- * PHP version 5.3
+ * PHP version 8.1
  *
  * @category Statement
  * @package  PDOOCI
@@ -67,7 +69,7 @@ class Statement extends \PDOStatement implements \IteratorAggregate
      *
      * @return bool bound
      */
-    public function bindValue($param, $value, $type=null)
+    public function bindValue($param, $value, $type = null): bool
     {
         $ok = false;
         try {
@@ -100,7 +102,7 @@ class Statement extends \PDOStatement implements \IteratorAggregate
      *
      * @return bool bound
      */
-    public function bindParam($param, &$value, $type=null, $leng=null, $driver=null)
+    public function bindParam($param, &$value, $type = null, $leng = null, $driver = null): bool
     {
         $ok = false;
         try {
@@ -140,7 +142,7 @@ class Statement extends \PDOStatement implements \IteratorAggregate
      * @return this object
      * @throws \PDOException
      */
-    public function execute($values=null)
+    public function execute($values=null): bool
     {
         $ok = false;
         set_error_handler(array($this->_pdooci,"errorHandler"));
@@ -189,7 +191,7 @@ class Statement extends \PDOStatement implements \IteratorAggregate
      *
      * @return int number of rows
      */
-    public function rowCount()
+    public function rowCount(): int
     {
         set_error_handler(array($this->_pdooci,"errorHandler"));
         $rows = null;
@@ -205,9 +207,10 @@ class Statement extends \PDOStatement implements \IteratorAggregate
     /**
      * Close the current cursor
      *
-     * @return null
+     * @return bool
      * @throws \PDOException
      */
+    #[ReturnTypeWillChange]
     public function closeCursor()
     {
         set_error_handler(array($this->_pdooci,"errorHandler"));
@@ -230,7 +233,7 @@ class Statement extends \PDOStatement implements \IteratorAggregate
      * @return mixed
      * @throws \PDOException
      */
-    public function fetch($style = null, $orientation = null, $offset = null)
+    public function fetch($style = null, $orientation = null, $offset = null): mixed
     {
         set_error_handler(array($this->_pdooci,"errorHandler"));
         try {
@@ -267,15 +270,15 @@ class Statement extends \PDOStatement implements \IteratorAggregate
     /**
      * Fetch all
      *
-     * @param mixed $style     fetch style
+     * @param mixed $mode     fetch style
      * @param mixed $argument  fetch argument
      * @param mixed $ctor_args constructor args
      *
      * @return mixed results
      */
-    public function fetchAll($style=null, $argument=null, $ctor_args=null)
+    public function fetchAll($mode = PDO::FETCH_BOTH, $argument = null, ...$args): array
     {
-        $style = is_null($style) ? $this->_fetch_sty : $style;
+        $style = is_null($mode) ? $this->_fetch_sty : $mode;
         $rst   = null;
         try {
             switch ($style)
@@ -355,7 +358,7 @@ class Statement extends \PDOStatement implements \IteratorAggregate
      *
      * @return mixed column value
      */
-    public function fetchColumn($colnum=0)
+    public function fetchColumn($colnum = 0): mixed
     {
         $rst = $this->fetch(\PDO::FETCH_NUM);
         return $rst === false ? false : $rst[$colnum];
@@ -364,18 +367,18 @@ class Statement extends \PDOStatement implements \IteratorAggregate
     /**
      * Fetch data and create an object
      *
-     * @param string $name      class name
+     * @param string $class      class name
      * @param mixed  $ctor_args constructor args
      *
      * @return mixed object
      */
-    public function fetchObject($name='stdClass', $ctor_args=null)
+    public function fetchObject(?string $class = 'stdClass', array $constructorArgs = []): object|false
     {
         try {
             $data = $this->fetch(\PDO::FETCH_ASSOC);
-            return $this->_createObjectFromData($name, $data);
+            return $this->_createObjectFromData($class, $data);
         } catch (\Exception $e) {
-            return null;
+            throw new \PDOException($e->getMessage());
         }
     }
 
@@ -393,7 +396,7 @@ class Statement extends \PDOStatement implements \IteratorAggregate
             $cls = new $name();
             foreach ($data as $key => $value) {
                 if ($name !== 'stdClass' && !array_key_exists(strtolower($key), get_object_vars($cls))) {
-                    var_dump(get_object_vars($cls));
+                    //var_dump(get_object_vars($cls));
                     continue;
                 }
                 $key = strtolower($key);
@@ -434,7 +437,7 @@ class Statement extends \PDOStatement implements \IteratorAggregate
      *
      * @return mixed iterator
      */
-    public function getIterator()
+    public function getIterator(): \Iterator
     {
         return new StatementIterator($this);
     }
@@ -443,12 +446,11 @@ class Statement extends \PDOStatement implements \IteratorAggregate
      * Set the fetch mode
      *
      * @param int   $mode fetch mode
-     * @param mixed $p1   first optional parameter
-     * @param mixed $p2   second optional parameter
-     *
+     * @param null  $className
+     * @param mixed ...$params
      * @return null
      */
-    public function setFetchMode($mode, $p1=null, $p2=null)
+    public function setFetchMode($mode, $className = null, ...$params)
     {
         $this->_fetch_sty = $mode;
     }
@@ -474,7 +476,8 @@ class Statement extends \PDOStatement implements \IteratorAggregate
      *
      * @return bool if was bound
      */
-    public function bindColumn($column, &$param, $type=null, $maxlen=null, $driver=null)
+    #[ReturnTypeWillChange]
+    public function bindColumn($column, &$param, $type = null, $maxlen = null, $driver = null)
     {
         $column = is_numeric($column) ? $column : strtoupper($column);
         $this->_binds[$column] = &$param;
@@ -508,7 +511,7 @@ class Statement extends \PDOStatement implements \IteratorAggregate
      *
      * @return int column count or zero if not executed
      */
-    public function columnCount()
+    public function columnCount(): int
     {
         if (!$this->_stmt) {
             return 0;
@@ -524,8 +527,9 @@ class Statement extends \PDOStatement implements \IteratorAggregate
     /**
      * Debug dump params
      *
-     * @return string params
+     * @return bool|NULL
      */
+    #[ReturnTypeWillChange]
     public function debugDumpParams()
     {
         $str  = "SQL: [".strlen($this->_statement)."] ".$this->_statement."\n";
@@ -541,9 +545,9 @@ class Statement extends \PDOStatement implements \IteratorAggregate
     /**
      * Return error code
      *
-     * @return mixed error code
+     * @return string|NULL
      */
-    public function errorCode()
+    public function errorCode(): ?string
     {
         return $this->_pdooci->errorCode();
     }
@@ -551,9 +555,9 @@ class Statement extends \PDOStatement implements \IteratorAggregate
     /**
      * Return error info
      *
-     * @return mixed error info
+     * @return array
      */
-    public function errorInfo()
+    public function errorInfo(): array
     {
         return $this->_pdooci->errorInfo();
     }
@@ -566,6 +570,7 @@ class Statement extends \PDOStatement implements \IteratorAggregate
      *
      * @return true if setted
      */
+    #[ReturnTypeWillChange]
     public function setAttribute($attr, $value)
     {
         // nothing to see here
@@ -578,7 +583,8 @@ class Statement extends \PDOStatement implements \IteratorAggregate
      *
      * @return mixed value
      */
-    public function getAttribute($attr)
+    #[ReturnTypeWillChange]
+    public function getAttribute(int $name)
     {
         // nothing to see here
     }
@@ -590,16 +596,16 @@ class Statement extends \PDOStatement implements \IteratorAggregate
      *
      * @return mixed column meta data
      */
-    public function getColumnMeta($colnum=0)
+    public function getColumnMeta($colnum = 0): array|false
     {
         if (!$this->_stmt) {
-            return null;
+            return [];
         }
-        $name = \oci_field_name($this->_stmt, $colnum+1);
-        $len  = \oci_field_size($this->_stmt, $colnum+1);
-        $prec = \oci_field_scale($this->_stmt, $colnum+1);
-        $type = \oci_field_type($this->_stmt, $colnum+1);
-        return array("name"=>$name, "len"=>$len, "precision"=>$prec, "driver:decl_type"=>$type);
+        $name = \oci_field_name($this->_stmt, $colnum + 1);
+        $len  = \oci_field_size($this->_stmt, $colnum + 1);
+        $prec = \oci_field_scale($this->_stmt, $colnum + 1);
+        $type = \oci_field_type($this->_stmt, $colnum + 1);
+        return array("name" => $name, "len" => $len, "precision" => $prec, "driver:decl_type" => $type);
     }
 
     /**
@@ -607,6 +613,7 @@ class Statement extends \PDOStatement implements \IteratorAggregate
      *
      * @return bool
      */
+    #[ReturnTypeWillChange]
     public function nextRowSet()
     {
         // TODO: insert some code here if needed
@@ -637,7 +644,7 @@ class Statement extends \PDOStatement implements \IteratorAggregate
             $case = CASE_UPPER;
             break;
         default:
-            throw new \PDOException('Unknown case attribute: '.$this->_case);
+            throw new \PDOException('Unknown case attribute: ' . $this->_case);
         }
 
         return array_map(
@@ -657,9 +664,9 @@ class Statement extends \PDOStatement implements \IteratorAggregate
      *
      * @author John Yendt <@normcf>
      *
-     * @return correc type
+     * @return int type
      */
-    private function _pdoToOciType($pdotype)
+    private function _pdoToOciType($pdotype): int
     {
         $ocitype = SQLT_CHR;
         $pdotype = $pdotype & ~ PDO::PARAM_INPUT_OUTPUT;
@@ -676,10 +683,6 @@ class Statement extends \PDOStatement implements \IteratorAggregate
 
         case PDO::PARAM_BOOL:
             $ocitype = SQLT_BOL;
-            break;
-
-        case PDO::PARAM_LOB:
-            $ociType = OCI_D_LOB;
             break;
         }
         return $ocitype;

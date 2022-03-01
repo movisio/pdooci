@@ -2,7 +2,7 @@
 /**
  * PDOCI
  *
- * PHP version 5.3
+ * PHP version 8.1
  *
  * @category PDOOCI
  * @package  PDOOCI
@@ -11,13 +11,15 @@
  * @link     http://github.com/taq/pdooci
  */
 namespace PDOOCI;
-require_once dirname(__FILE__)."/Statement.php";
-require_once dirname(__FILE__)."/StatementIterator.php";
+use ReturnTypeWillChange;
+
+require_once __DIR__ . "/Statement.php";
+require_once __DIR__ . "/StatementIterator.php";
 
 /**
  * Main class of PDOOCI
  *
- * PHP version 5.3
+ * PHP version 8.1
  *
  * @category Connection
  * @package  PDOOCI
@@ -28,7 +30,7 @@ require_once dirname(__FILE__)."/StatementIterator.php";
 class PDO extends \PDO
 {
     private $_con = null;
-    private $_autocommit = true;
+    private bool $_autocommit = true;
     private $_last_error = null;
     private $_charset    = null;
     private $_case       = \PDO::CASE_NATURAL;
@@ -37,21 +39,20 @@ class PDO extends \PDO
      * Class constructor
      *
      * @param string $data     the connection string
-     * @param string $username user name
-     * @param string $password password
-     * @param array $options  options to send to the connection
+     * @param string|NULL $username username
+     * @param string|NULL $password password
+     * @param array|NULL $options  options to send to the connection
      *
      * @return \PDO object
      * @throws \PDOException
      */
-    public function __construct($data, $username, $password, array $options=null)
+    public function __construct(string $data, string $username = null, string $password = null, array $options = null)
     {
         if (!function_exists("\oci_parse")) {
             throw new \PDOException("No support for Oracle, please install the OCI driver");
         }
 
         // find charset
-        $charset = null;
         $data    = preg_replace('/^oci:/', '', $data);
         $tokens  = preg_split('/;/', $data);
         $data    = str_replace(array('dbname=//', 'dbname='), '', $tokens[0]);
@@ -95,7 +96,7 @@ class PDO extends \PDO
      *
      * @return charset
      */
-    private function _getCharset($charset=null)
+    private function _getCharset($charset = null)
     {
         if (!$charset) {
             $langs = array_filter(array(getenv("NLS_LANG")), "strlen");
@@ -108,7 +109,7 @@ class PDO extends \PDO
                 return preg_match($expr, $token, $matches);
             }
         );
-        if (sizeof($tokens)>0) {
+        if (sizeof($tokens) > 0) {
             preg_match($expr, array_shift($tokens), $matches);
             $this->_charset = $matches[2];
         } else {
@@ -132,13 +133,10 @@ class PDO extends \PDO
      *
      * @param string $statement sql query
      * @param int    $mode      PDO query() mode
-     * @param int    $p1        PDO query() first parameter
-     * @param int    $p2        PDO query() second parameter
-     *
+     * @param mixed  ...$fetch_mode_args
      * @return Statement
-     * @throws \PDOException
      */
-    public function query($statement, $mode=null, $p1=null, $p2=null)
+    public function query($statement, $mode = PDO::ATTR_DEFAULT_FETCH_MODE, ...$fetch_mode_args): \PDOStatement|false
     {
         // TODO: use mode and parameters
         $stmt = null;
@@ -161,6 +159,7 @@ class PDO extends \PDO
      * @return number of affected rows
      * @throws \PDOException
      */
+    #[ReturnTypeWillChange]
     public function exec($sql)
     {
         try {
@@ -182,16 +181,17 @@ class PDO extends \PDO
      *
      * @return boolean if set was ok
      */
+    #[ReturnTypeWillChange]
     public function setAttribute($attr, $value)
     {
         switch($attr)
         {
         case \PDO::ATTR_AUTOCOMMIT:
             $this->_autocommit = (is_bool($value) && $value) || in_array(strtolower($value), array("on", "true"));
-            return;
+            return true;
         case \PDO::ATTR_CASE:
             $this->_case = $value;
-            return;
+            return true;
         }
     }
 
@@ -202,7 +202,7 @@ class PDO extends \PDO
      *
      * @return mixed attribute value
      */
-    public function getAttribute($attr)
+    public function getAttribute($attr): mixed
     {
         switch($attr)
         {
@@ -231,6 +231,7 @@ class PDO extends \PDO
      *
      * @return boolean if commit was executed
      */
+    #[ReturnTypeWillChange]
     public function commit()
     {
         \oci_commit($this->_con);
@@ -242,6 +243,7 @@ class PDO extends \PDO
      *
      * @return boolean if rollback was executed
      */
+    #[ReturnTypeWillChange]
     public function rollBack()
     {
         \oci_rollback($this->_con);
@@ -251,8 +253,9 @@ class PDO extends \PDO
     /**
      * Start a transaction, setting auto commit to off
      *
-     * @return null
+     * @return bool
      */
+    #[ReturnTypeWillChange]
     public function beginTransaction()
     {
         $this->setAttribute(\PDO::ATTR_AUTOCOMMIT, false);
@@ -264,10 +267,10 @@ class PDO extends \PDO
      * @param string $query   for statement
      * @param mixed  $options for driver
      *
-     * @return Statement
+     * @return PDOStatement
      * @throws \PDOException
      */
-    public function prepare($query, $options=null)
+    public function prepare(string $query, array $options = []): \PDOStatement|false
     {
         $stmt = null;
         try {
@@ -285,7 +288,7 @@ class PDO extends \PDO
      *
      * @return null
      */
-    public function setError($obj=null)
+    public function setError($obj = null)
     {
         $obj = $obj ? $obj : $this->_con;
         if (!is_resource($obj)) {
@@ -303,12 +306,13 @@ class PDO extends \PDO
      *
      * @return int error code
      */
-    public function errorCode()
+    #[ReturnTypeWillChange]
+    public function errorCode(): ?int
     {
         if (!$this->_last_error) {
             return null;
         }
-        return intval($this->_last_error["code"]);
+        return (int)$this->_last_error["code"];
     }
 
     /**
@@ -316,10 +320,10 @@ class PDO extends \PDO
      *
      * @return array error info
      */
-    public function errorInfo()
+    public function errorInfo(): array
     {
         if (!$this->_last_error) {
-            return null;
+            return [];
         }
         return array($this->_last_error["code"],
                      $this->_last_error["code"],
@@ -366,7 +370,7 @@ class PDO extends \PDO
      *
      * @return array with drivers
      */
-    public static function getAvailableDrivers()
+    public static function getAvailableDrivers(): array
     {
         $drivers = \PDO::getAvailableDrivers();
         if (!in_array("oci", $drivers)) {
@@ -380,7 +384,7 @@ class PDO extends \PDO
      *
      * @return boolean on a transaction
      */
-    public function inTransaction()
+    public function inTransaction(): bool
     {
         return !$this->_autocommit;
     }
@@ -393,7 +397,7 @@ class PDO extends \PDO
      *
      * @return string quoted
      */
-    public function quote($string, $type=null)
+    public function quote($string, $type=null): string|false
     {
         $string = preg_replace('/\'/', "''", $string);
         $string = "'$string'";
@@ -409,7 +413,7 @@ class PDO extends \PDO
      * @return mixed last id
      * @throws \PDOException
      */
-    public function lastInsertId($sequence=null)
+    public function lastInsertId($sequence=null): string|false
     {
         if (!$sequence) {
             throw new \PDOException("SQLSTATE[IM001]: Driver does not support this function: driver does not support getting attributes in system_requirements");
